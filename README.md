@@ -1,37 +1,89 @@
 # Lock-In Android App
 
-A modern Android application built with Kotlin, Jetpack Compose, CameraX, and Google ML Kit Pose Detection. This repository demonstrates a real-time camera-based motion or posture tracking app with local persistence and background task support.
+Lock-In is a Kotlin-based Android fitness application focused on helping users track pushups and plank workouts using real-time camera pose detection. The app blends Jetpack Compose UI, CameraX live preview, ML Kit pose analysis, and on-device progress tracking to create an interactive strength training experience.
 
-## Key Features
+## What This App Does
 
-- **Android Kotlin App** using `org.jetbrains.kotlin.android` and Android Gradle Plugin `8.13.2`
-- **Jetpack Compose UI** for fast, declarative user interfaces
-- **CameraX Integration** for live camera capture and preview
-- **ML Kit Pose Detection** for body pose analysis and detection
-- **Room Database** support with Kotlin Symbol Processing (KSP) for local data storage
-- **WorkManager** background processing support
-- **Android 17 / Java 17** compatibility
+- Tracks **pushup repetitions** using camera-based pose detection and an elbow-angle state machine.
+- Tracks **plank hold duration** with live posture validation and a timer that only runs while good form is detected.
+- Provides **real-time feedback** for pushup and plank form, including posture corrections and angle metrics.
+- Saves workout sessions locally using **Room database persistence**.
+- Includes progress, workout history, and achievement screens for pushup and plank goals.
 
-## Project Structure
+## Core Features
 
-- `app/` - Android app module
-- `app/src/main/AndroidManifest.xml` - app manifest with camera and notification permissions
-- `app/build.gradle.kts` - module build configuration and dependencies
-- `gradle/libs.versions.toml` - version catalog for plugins and libraries
-- `settings.gradle.kts` - Gradle project settings
+- **Pushup Rep Counting**
+  - Counts reps when the user starts from full extension, lowers into a valid down position, and returns to extension.
+  - Validates full body position, hip alignment, and elbow angle before counting a rep.
+  - Displays live elbow angle feedback and "ghost" posture overlay for better form.
 
-## Technical Stack
+- **Plank Hold Tracking**
+  - Detects plank posture from the front camera in portrait mode.
+  - Validates shoulder and hip alignment, body angle, and holding stability.
+  - Starts the plank timer only when good form is maintained.
+  - Shows live body angle, shoulder angle, and form issues such as hips too high or low.
 
-- Kotlin + Android SDK
-- Jetpack Compose
-- CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`)
-- Google ML Kit Pose Detection (`pose-detection`, `pose-detection-accurate`)
-- Room Persistence Library (`room-runtime`, `room-ktx`, `room-compiler`)
-- WorkManager (`work-runtime-ktx`)
-- AndroidX Navigation Compose
-- AndroidX Lifecycle + ViewModel Compose
+- **Real-Time Pose Guidance**
+  - Uses Google ML Kit Pose Detection to extract landmarks in real time.
+  - Displays a skeleton overlay plus ideal posture ghost hints.
+  - Provides instant feedback messages like "Keep hips level!" and "Fire rep X!"
 
-## Build & Run
+- **Local Persistence & Progress**
+  - Stores workout sessions with rep count and plank duration.
+  - Tracks cumulative pushup totals and plank hold seconds.
+  - Includes achievements for milestone goals like 50/100/200 pushups and 30/60/120 second planks.
+
+- **Modern Android Architecture**
+  - Built with **Jetpack Compose** for UI.
+  - Uses **CameraX** for camera feed and image analysis.
+  - Integrates **Room** and **KSP** for local storage.
+  - Supports **WorkManager** for periodic reminders and background tasks.
+
+## App Flow
+
+1. **Home Screen**
+   - Start a pushup session.
+   - Start a plank session.
+   - Review progress and achievements.
+
+2. **Workout Screen**
+   - Live camera preview with skeleton and posture overlays.
+   - Mode selector for `PUSHUPS` or `PLANK`.
+   - Central stats display for reps or plank time.
+   - Instant feedback badge and finish button.
+
+3. **Progress & Achievements**
+   - View workout history and cumulative performance.
+   - Unlock badges for pushup and plank milestones.
+
+## Technical Overview
+
+- Android Gradle Plugin: `8.13.2`
+- Kotlin version: `1.9.23`
+- Compose compiler extension: `1.5.11`
+- Min SDK: `26`
+- Target SDK: `34`
+- Package namespace: `in.karthiknp.myapplication`
+
+### Key Modules
+
+- `app/src/main/java/in/karthiknp/myapplication/pose`
+  - `PushupDetector.kt` — pushup rep counting and form analysis.
+  - `PlankDetector.kt` — plank posture detection and hold timer.
+
+- `app/src/main/java/in/karthiknp/myapplication/ui/screens/workout`
+  - `WorkoutViewModel.kt` — workout state management and feedback.
+  - `WorkoutScreen.kt` — Compose UI for workout tracking.
+
+- `app/src/main/java/in/karthiknp/myapplication/camera`
+  - `CameraPreview.kt` — live camera feed integration.
+  - `PoseAnalyzer.kt` — ML Kit image analysis pipeline.
+
+- `app/src/main/java/in/karthiknp/myapplication/data/local`
+  - Room database schema and entity models.
+  - Workout history and achievement persistence.
+
+## Installation
 
 1. Clone the repository:
 
@@ -42,27 +94,27 @@ A modern Android application built with Kotlin, Jetpack Compose, CameraX, and Go
 
 2. Open the project in Android Studio.
 3. Sync Gradle and build the project.
-4. Run the `app` module on an Android device or emulator with camera support.
+4. Run the `app` module on a device with a camera.
 
 ## Permissions
 
-This app requests the following runtime permissions:
+This app requires runtime permission for:
 
 - `android.permission.CAMERA`
-- `android.permission.POST_NOTIFICATIONS`
+- `android.permission.POST_NOTIFICATIONS` (Android 13+)
 
-The manifest also declares optional camera hardware support using `android.hardware.camera`.
+The manifest also marks camera hardware as optional so the app can gracefully handle devices without a rear camera.
 
-## Notes
+## Usage Tips
 
-- The application package namespace is `in.karthiknp.myapplication`.
-- Minimum supported API level is `26` and target SDK is `34`.
-- Compose compiler extension version is `1.5.11`.
+- For **pushups**, place the phone to the side so the full body is visible from head to ankles.
+- For **planks**, position the front camera at chest height so shoulders and hips are clearly visible.
+- Keep the frame stable and ensure good lighting for accurate pose detection.
 
-## SEO Keywords
+## Keywords
 
-Android Kotlin app, Jetpack Compose, CameraX, ML Kit Pose Detection, Room Database Android, WorkManager Android, real-time pose tracking, Android developer sample, Android camera app, Kotlin Android project.
+pushup tracker app, plank workout tracker, Android pose detection app, camera-based fitness app, ML Kit plank timer, ML Kit pushup counter, Jetpack Compose fitness app, CameraX workout tracker, Android workout progress, pushup and plank form feedback.
 
 ## License
 
-This repository does not include a license file. Add a license if you want to share or distribute the code publicly.
+No license file is included in this repository. Add a license if you plan to publish or share this project publicly.
