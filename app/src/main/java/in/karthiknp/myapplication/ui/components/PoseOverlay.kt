@@ -62,7 +62,7 @@ fun PoseOverlay(
             }
             WorkoutType.PLANK -> {
                 val inRange = shoulderAngle in 55.0..130.0
-                if (inRange) Color(0xFF00E676).copy(alpha = 0.85f)
+                if (inRange) Color(0xFFFF6142).copy(alpha = 0.85f)
                 else         Color(0xFFFFAB40).copy(alpha = 0.9f) // amber = elbows misaligned
             }
         }
@@ -75,7 +75,7 @@ fun PoseOverlay(
                 val t = ((bodyAngle - 145.0) / 35.0).coerceIn(0.0, 1.0).toFloat()
                 Color(red = 1f - t, green = t, blue = 0.2f, alpha = 0.9f)
             }
-            WorkoutType.PUSHUP -> Color(0xFF00BFFF.toInt()).copy(alpha = 0.85f)
+            WorkoutType.PUSHUP -> Color(0xFFFF2A42).copy(alpha = 0.85f)
         }
 
         val legColor   = Color(0xFFFFD700.toInt()).copy(alpha = 0.85f)

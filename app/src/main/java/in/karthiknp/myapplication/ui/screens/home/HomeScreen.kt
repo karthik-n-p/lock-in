@@ -1,6 +1,8 @@
 package `in`.karthiknp.myapplication.ui.screens.home
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,19 +11,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `in`.karthiknp.myapplication.data.local.entity.DailyLog
+import `in`.karthiknp.myapplication.data.local.PreferencesManager
+import `in`.karthiknp.myapplication.ui.theme.*
 
-private val BG     = Color(0xFF0A0A0F)
-private val CARD   = Color(0xFF14141E)
-private val ACCENT = Color(0xFF6C63FF)
-private val GREEN  = Color(0xFF00E676)
-private val ORANGE = Color(0xFFFFAB40)
+private val BentoShape = RoundedCornerShape(22.dp)
+private val BentoGap   = 10.dp
 
 @Composable
 fun HomeScreen(
@@ -29,184 +33,476 @@ fun HomeScreen(
     onStartPlank: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
-    val stats     by viewModel.stats.collectAsState()
-    val last30    by viewModel.last30Days.collectAsState()
+    val stats         by viewModel.stats.collectAsState()
+    val last30        by viewModel.last30Days.collectAsState()
     val currentStreak by viewModel.currentStreak.collectAsState()
     val showStreakFix by viewModel.showStreakFixDialog.collectAsState()
 
+    val dailyQuote = remember { PreferencesManager.MOTIVATION_QUOTES.random() }
+
+    // ── Streak Fix Dialog ─────────────────────────────────────────────────────
     if (showStreakFix != null) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissStreakFixDialog() },
-            title = { Text("Streak in Danger!", color = ORANGE, fontWeight = FontWeight.Bold) },
-            text = { Text("You missed yesterday's workout. Use 1 of your 2 monthly Streak Fixes to save your streak?", color = Color.White) },
+            title = { Text("🔥 Streak in Danger!", color = WarmAmber, fontWeight = FontWeight.Bold) },
+            text  = { Text("You missed yesterday. Use 1 of your 3 monthly Streak Fixes?", color = TextPrimary) },
             confirmButton = {
                 TextButton(onClick = { viewModel.applyStreakFix() }) {
-                    Text("Use Fix", color = GREEN, fontWeight = FontWeight.Bold)
+                    Text("Save Streak", color = CherryRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissStreakFixDialog() }) {
-                    Text("Let it burn", color = Color.Gray)
+                    Text("Let it go", color = TextSecondary)
                 }
             },
-            containerColor = CARD,
-            titleContentColor = ORANGE,
-            textContentColor = Color.White
+            containerColor = EmberSurface,
+            shape = BentoShape
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BG)
+            .background(EmberBlack)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 32.dp)
+            .padding(16.dp)
     ) {
         // ── Header ────────────────────────────────────────────────────────────
-        Text("LOCK IN", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black, letterSpacing = 6.sp)
-        Text("Offline Fitness Tracker", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp)
+        Text(
+            "LOCK IN",
+            color = CherryRed,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 4.sp
+        )
+        Spacer(Modifier.height(2.dp))
+        Text("Offline Fitness Tracker", color = TextTertiary, fontSize = 12.sp)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // ── Quick Start Buttons ───────────────────────────────────────────────
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StartButton(
-                label = "PUSHUPS",
-                emoji = "💪",
-                gradient = Brush.horizontalGradient(listOf(Color(0xFF6C63FF), Color(0xFF3A36DB))),
-                modifier = Modifier.weight(1f),
-                onClick = onStartPushups
-            )
-            StartButton(
-                label = "PLANK",
-                emoji = "🧘",
-                gradient = Brush.horizontalGradient(listOf(Color(0xFF00C853), Color(0xFF007B33))),
-                modifier = Modifier.weight(1f),
-                onClick = onStartPlank
-            )
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        // ── Stats Grid ────────────────────────────────────────────────────────
-        Text("LIFETIME STATS", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("Total Pushups", "${stats.totalPushups}", ACCENT, Modifier.weight(1f))
-            StatCard("Plank Time", formatTime(stats.totalPlankSec), GREEN, Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("Best Day", "${stats.maxPushupsDay} reps", ORANGE, Modifier.weight(1f))
-            StatCard("Active Days", "${stats.activeDays}", Color(0xFFFF6B6B), Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("Daily Avg", "%.1f reps".format(stats.avgPushups), Color(0xFF40C4FF), Modifier.weight(1f))
-            StatCard("Longest Plank", formatTime(stats.longestPlankSec), Color(0xFFE040FB), Modifier.weight(1f))
-        }
-
-        Spacer(Modifier.height(28.dp))
-
-        // ── Streak Heatmap ────────────────────────────────────────────────────
-        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("CURRENT STREAK", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-            Text("🔥 $currentStreak Days", color = ORANGE, fontSize = 18.sp, fontWeight = FontWeight.Black)
-        }
-        Spacer(Modifier.height(10.dp))
-        StreakHeatmap(logs = last30)
-    }
-}
-
-@Composable
-private fun StartButton(
-    label: String, emoji: String,
-    gradient: Brush,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .height(100.dp)
-            .background(gradient, RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            onClick = onClick,
-            color  = Color.Transparent,
-            modifier = Modifier.fillMaxSize()
+        // ═══════════════════════════════════════════════════════════════════════
+        // BENTO ROW 1: Streak (tall left) + Two stacked start buttons (right)
+        // ═══════════════════════════════════════════════════════════════════════
+        Row(
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(BentoGap)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize()
+            // ── Streak Card (tall) ────────────────────────────────────────────
+            BentoCard(
+                modifier = Modifier.weight(1f).fillMaxHeight()
             ) {
-                Text(emoji, fontSize = 28.sp)
-                Spacer(Modifier.height(4.dp))
-                Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, accentColor: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.height(80.dp),
-        shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = CARD)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
-            Text(value, color = accentColor, fontSize = 22.sp, fontWeight = FontWeight.Black)
-        }
-    }
-}
-
-@Composable
-private fun StreakHeatmap(logs: List<DailyLog>) {
-    val logMap = logs.associateBy { it.date }
-
-    Card(
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CARD)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Show 5 weeks × 6 columns (30 days) grid
-            val today = java.time.LocalDate.now()
-            val dates = (29 downTo 0).map { today.minusDays(it.toLong()).toString() }
-
-            dates.chunked(6).forEach { week ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    week.forEach { date ->
-                        val log   = logMap[date]
-                        val hasPU = (log?.pushupCount ?: 0) > 0
-                        val hasPL = (log?.plankSeconds ?: 0) > 0
-                        val color = when {
-                            hasPU && hasPL -> ACCENT
-                            hasPU          -> GREEN
-                            hasPL          -> ORANGE
-                            else           -> Color.White.copy(alpha = 0.07f)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(color, RoundedCornerShape(6.dp))
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(18.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("STREAK", color = TextTertiary, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                    Column {
+                        AnimatedStreakFire(streak = currentStreak)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (currentStreak > 0) "Keep it alive!" else "Start today!",
+                            color = TextTertiary,
+                            fontSize = 11.sp
                         )
                     }
                 }
-                Spacer(Modifier.height(6.dp))
             }
 
+            // ── Start Buttons (stacked) ───────────────────────────────────────
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(BentoGap)
+            ) {
+                StartBentoButton(
+                    emoji = "🏋️",
+                    label = "PUSHUPS",
+                    brush = Brush.horizontalGradient(listOf(CherryRed, DeepRose)),
+                    modifier = Modifier.fillMaxWidth().height(72.dp),
+                    onClick = onStartPushups
+                )
+                StartBentoButton(
+                    emoji = "⏱️",
+                    label = "PLANK",
+                    brush = Brush.horizontalGradient(listOf(WarmAmber, Color(0xFFE67E22))),
+                    modifier = Modifier.fillMaxWidth().height(72.dp),
+                    onClick = onStartPlank
+                )
+            }
+        }
+
+        Spacer(Modifier.height(BentoGap))
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BENTO ROW 2: Today's Stats — two equal cards
+        // ═══════════════════════════════════════════════════════════════════════
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(BentoGap)
+        ) {
+            BentoStatCard(
+                label = "TODAY",
+                emoji = "🏋️",
+                value = "${stats.todayPushups}",
+                unit  = "reps",
+                color = CherryRed,
+                modifier = Modifier.weight(1f)
+            )
+            BentoStatCard(
+                label = "TODAY",
+                emoji = "⏱️",
+                value = formatTime(stats.todayPlankSec),
+                unit  = "plank",
+                color = WarmAmber,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(BentoGap))
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BENTO ROW 3: Daily Goal — full width
+        // ═══════════════════════════════════════════════════════════════════════
+        val pushupPct = (stats.todayPushups / 30f).coerceIn(0f, 1f)
+        val plankPct  = (stats.todayPlankSec / 60f).coerceIn(0f, 1f)
+        val isComplete = pushupPct >= 1f && plankPct >= 1f
+
+        BentoGoalCard(pushupPct = pushupPct, plankPct = plankPct, isComplete = isComplete)
+
+        Spacer(Modifier.height(BentoGap))
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BENTO ROW 4: Quote — full width, minimal
+        // ═══════════════════════════════════════════════════════════════════════
+        BentoCard(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(CherryRed.copy(0.04f), WarmAmber.copy(0.04f))
+                        )
+                    )
+                    .padding(18.dp)
+            ) {
+                Text(
+                    "\"$dailyQuote\"",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        Spacer(Modifier.height(BentoGap))
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BENTO ROW 5: Streak Calendar — full width
+        // ═══════════════════════════════════════════════════════════════════════
+        Text("ACTIVITY", color = TextTertiary, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
+        StreakCalendar(logs = last30)
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// BENTO BUILDING BLOCKS
+// ═════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun BentoCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier.clip(BentoShape),
+        shape = BentoShape,
+        color = EmberSurface
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun StartBentoButton(
+    emoji: String,
+    label: String,
+    brush: Brush,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.clip(BentoShape),
+        shape = BentoShape,
+        color = Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(brush),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(emoji, fontSize = 20.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    label,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BentoStatCard(
+    label: String,
+    emoji: String,
+    value: String,
+    unit: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    BentoCard(modifier = modifier) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(label, color = TextTertiary, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(emoji, fontSize = 16.sp)
+                Spacer(Modifier.width(6.dp))
+                Text(value, color = color, fontSize = 26.sp, fontWeight = FontWeight.Black)
+            }
+            Text(unit, color = TextTertiary, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun BentoGoalCard(pushupPct: Float, plankPct: Float, isComplete: Boolean) {
+    val combinedPct = ((pushupPct + plankPct) / 2f)
+
+    val glowAnim = rememberInfiniteTransition(label = "glow")
+    val glowAlpha by glowAnim.animateFloat(
+        initialValue = 0.3f, targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
+        label = "glowA"
+    )
+
+    BentoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isComplete) Modifier.border(
+                    1.dp,
+                    Brush.horizontalGradient(
+                        listOf(GoldReward.copy(alpha = glowAlpha), WarmAmber.copy(alpha = glowAlpha))
+                    ),
+                    BentoShape
+                ) else Modifier
+            )
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("DAILY GOAL", color = TextTertiary, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                if (isComplete) {
+                    Text("🎯 CRUSHED!", color = GoldReward, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                } else {
+                    Text("${(combinedPct * 100).toInt()}%", color = CherryRed, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+
+            GoalRow(label = "Pushups", pct = pushupPct, target = "30", color = CherryRed)
+            Spacer(Modifier.height(10.dp))
+            GoalRow(label = "Plank",   pct = plankPct,  target = "60s", color = WarmAmber)
+        }
+    }
+}
+
+@Composable
+private fun GoalRow(label: String, pct: Float, target: String, color: Color) {
+    val animPct by animateFloatAsState(
+        targetValue = pct,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "goalPct"
+    )
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, color = TextSecondary, fontSize = 11.sp)
+            Text("${(pct * 100).toInt()}% of $target", color = TextTertiary, fontSize = 10.sp)
+        }
+        Spacer(Modifier.height(5.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(5.dp)
+                .background(Color.White.copy(0.06f), RoundedCornerShape(3.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animPct)
+                    .height(5.dp)
+                    .background(
+                        Brush.horizontalGradient(listOf(color.copy(0.5f), color)),
+                        RoundedCornerShape(3.dp)
+                    )
+            )
+        }
+    }
+}
+
+// ─── Animated Streak ──────────────────────────────────────────────────────────
+
+@Composable
+private fun AnimatedStreakFire(streak: Int) {
+    if (streak > 0) {
+        val pulse = rememberInfiniteTransition(label = "fire")
+        val s by pulse.animateFloat(
+            1f, 1.15f,
+            infiniteRepeatable(tween(800, easing = EaseInOutSine), RepeatMode.Reverse),
+            label = "fScale"
+        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("🔥", fontSize = 28.sp, modifier = Modifier.scale(s))
+            Spacer(Modifier.width(6.dp))
+            Text("$streak", color = WarmAmber, fontSize = 36.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(4.dp))
+            Text("days", color = TextSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+        }
+    } else {
+        Text("🔥 0 days", color = TextTertiary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// ─── Real Calendar Streak Map ─────────────────────────────────────────────────
+
+@Composable
+private fun StreakCalendar(logs: List<DailyLog>) {
+    val logMap = logs.associateBy { it.date }
+    val today  = java.time.LocalDate.now()
+
+    // Show current month as a real calendar
+    val firstOfMonth = today.withDayOfMonth(1)
+    val lastDay = today.month.length(today.isLeapYear)
+    val monthName = today.month.name.lowercase().replaceFirstChar { it.uppercase() }
+
+    // What weekday does the 1st fall on? (Mon=1 … Sun=7)
+    val startDow = firstOfMonth.dayOfWeek.value  // ISO: Mon=1
+
+    BentoCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(14.dp)) {
+
+            // Month + Year header
+            Text(
+                "$monthName ${today.year}",
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+
+            // Day-of-week headers
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun").forEach { d ->
+                    Text(
+                        d, color = TextTertiary, fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+
+            // Build calendar grid: fill empty slots before day 1 and after last day
+            val totalSlots = startDow - 1 + lastDay
+            val totalRows = (totalSlots + 6) / 7  // ceil division
+
+            for (row in 0 until totalRows) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    for (col in 0 until 7) {
+                        val slotIndex = row * 7 + col
+                        val dayNum = slotIndex - (startDow - 1) + 1
+
+                        if (dayNum < 1 || dayNum > lastDay) {
+                            // Empty cell
+                            Box(Modifier.weight(1f).aspectRatio(1f))
+                        } else {
+                            val date = firstOfMonth.plusDays((dayNum - 1).toLong())
+                            val ds = date.toString()
+                            val log = logMap[ds]
+                            val hasPU = (log?.pushupCount ?: 0) > 0
+                            val hasPL = (log?.plankSeconds ?: 0) > 0
+                            val isFix = log?.isStreakFix == true
+                            val isActive = hasPU || hasPL || isFix
+                            val isToday = date == today
+                            val isFuture = date.isAfter(today)
+                            val isPast = date.isBefore(today)
+
+                            // Unified colors: all active = CherryRed, missed past = subtle dark
+                            val cellColor = when {
+                                isFuture       -> Color.Transparent
+                                isActive       -> CherryRed
+                                isPast         -> CherryRed.copy(alpha = 0.08f) // missed day
+                                else           -> Color.Transparent // today, no workout yet
+                            }
+
+                            val textColor = when {
+                                isFuture       -> TextTertiary.copy(alpha = 0.25f)
+                                isActive       -> Color.White
+                                isPast         -> TextTertiary.copy(alpha = 0.4f)
+                                else           -> TextSecondary
+                            }
+
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(1.5.dp)
+                                    .then(
+                                        if (isToday) Modifier.border(
+                                            1.5.dp, CherryRed, RoundedCornerShape(6.dp)
+                                        ) else Modifier
+                                    )
+                                    .background(cellColor, RoundedCornerShape(6.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "$dayNum",
+                                    color = textColor,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isToday) FontWeight.Black else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(2.dp))
+            }
+
+            // Legend
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                LegendDot(GREEN,  "Pushups")
-                LegendDot(ORANGE, "Plank")
-                LegendDot(ACCENT, "Both")
+                LegendDot(CherryRed, "Active")
+                LegendDot(CherryRed.copy(0.08f), "Missed")
             }
         }
     }
@@ -215,9 +511,18 @@ private fun StreakHeatmap(logs: List<DailyLog>) {
 @Composable
 private fun LegendDot(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).background(color, RoundedCornerShape(2.dp)))
-        Spacer(Modifier.width(4.dp))
-        Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
+        Box(
+            Modifier
+                .size(10.dp)
+                .background(color, RoundedCornerShape(3.dp))
+                .then(
+                    if (color.alpha < 0.15f) Modifier.border(
+                        0.5.dp, TextTertiary.copy(0.3f), RoundedCornerShape(3.dp)
+                    ) else Modifier
+                )
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(label, color = TextTertiary, fontSize = 10.sp)
     }
 }
 

@@ -5,50 +5,34 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Background fill (dark navy) -->
+    <!-- Deep ember background fill -->
     <path
-        android:fillColor="#0A0A0F"
+        android:fillColor="#0C0808"
         android:pathData="M0,0h108v108h-108z"/>
 
-    <!-- Gradient circle glow -->
+    <!-- Subtle cherry red radial glow -->
     <path
-        android:fillColor="#336C63FF"
-        android:pathData="M54,20a34,34 0,1 1,0 68,34,34 0,1 1,0 -68z"/>
+        android:fillColor="#1AE63946"
+        android:pathData="M54,30a28,28 0,1 1,0 56,28,28 0,1 1,0 -56z"/>
 
-    <!-- Dumbbell bar -->
+    <!-- Flame / Power wings — Left -->
+    <path
+        android:fillColor="#E63946"
+        android:pathData="M54,42 L30,36 Q22,40 20,50 Q22,48 28,46 L38,52 L54,58z"/>
+
+    <!-- Flame / Power wings — Right (mirrored) -->
+    <path
+        android:fillColor="#E63946"
+        android:pathData="M54,42 L78,36 Q86,40 88,50 Q86,48 80,46 L70,52 L54,58z"/>
+
+    <!-- Central power bolt — white for contrast -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,51h44v6h-44z"
-        android:strokeColor="#00000000"
-        android:strokeWidth="1"/>
+        android:pathData="M50,56 L54,46 L58,56 L55,56 L55,68 L53,68 L53,56z"/>
 
-    <!-- Left weight top -->
+    <!-- Lightning bolt accent — warm amber -->
     <path
-        android:fillColor="#6C63FF"
-        android:pathData="M28,42h8v7h-8z"
-        android:strokeColor="#00000000"/>
-
-    <!-- Left weight bottom -->
-    <path
-        android:fillColor="#6C63FF"
-        android:pathData="M28,59h8v7h-8z"
-        android:strokeColor="#00000000"/>
-
-    <!-- Right weight top -->
-    <path
-        android:fillColor="#6C63FF"
-        android:pathData="M72,42h8v7h-8z"
-        android:strokeColor="#00000000"/>
-
-    <!-- Right weight bottom -->
-    <path
-        android:fillColor="#6C63FF"
-        android:pathData="M72,59h8v7h-8z"
-        android:strokeColor="#00000000"/>
-
-    <!-- Lightning bolt accent -->
-    <path
-        android:fillColor="#00E676"
-        android:pathData="M57,35l-8,14h6l-4,14 12,-16h-7z"/>
+        android:fillColor="#FF8C42"
+        android:pathData="M56,62 L53,67 h3 L52,72 L58,66 h-3 z"/>
 
 </vector>

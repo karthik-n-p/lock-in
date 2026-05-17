@@ -214,7 +214,7 @@ private fun DrawScope.drawPlankGhost(
 
     // ── "IDEAL" label arc above ghost ────────────────────────────────────────
     // (Cannot draw text in Canvas without nativeCanvas — draw a small ✓ hint dot)
-    drawCircle(Color(0xFF00E676).copy(alpha = alpha * 0.8f), dotR * 1.0f, Offset(shoulderX, headY - unit * 0.5f))
+    drawCircle(Color(0xFFFF6142).copy(alpha = alpha * 0.8f), dotR * 1.0f, Offset(shoulderX, headY - unit * 0.5f))
 }
 
 // ─── Pushup Ghost ────────────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ private fun DrawScope.drawPushupGhost(
     val targetColor = if (isDown)
         Color(0xFFFFAB40).copy(alpha = alpha)
     else
-        Color(0xFF00E676).copy(alpha = alpha)
+        Color(0xFFFF6142).copy(alpha = alpha)
 
     // Spine
     listOf(

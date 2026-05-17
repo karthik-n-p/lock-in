@@ -11,15 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `in`.karthiknp.myapplication.data.local.entity.DailyLog
-
-private val BG   = Color(0xFF0A0A0F)
-private val CARD = Color(0xFF14141E)
+import `in`.karthiknp.myapplication.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,93 +31,99 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("HISTORY", fontWeight = FontWeight.Black, letterSpacing = 3.sp) },
+                title = { Text("HISTORY", fontWeight = FontWeight.Black, letterSpacing = 3.sp, fontSize = 18.sp) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor    = BG,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = EmberBlack, titleContentColor = TextPrimary,
+                    navigationIconContentColor = TextPrimary
                 )
             )
         },
-        containerColor = BG
+        containerColor = EmberBlack
     ) { padding ->
         if (logs.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🏋️", fontSize = 48.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Text("No workouts yet", color = Color.White.copy(alpha = 0.4f), fontSize = 16.sp)
-                    Text("Complete your first session!", color = Color.White.copy(alpha = 0.25f), fontSize = 13.sp)
+                    Text("🏋️", fontSize = 40.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("No workouts yet", color = TextSecondary, fontSize = 14.sp)
+                    Text("Start your journey!", color = TextTertiary, fontSize = 11.sp)
                 }
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
-            ) {
-                items(logs) { log -> DailyLogCard(log) }
-            }
+                Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(vertical = 10.dp)
+            ) { items(logs) { MinimalLogRow(it) } }
         }
     }
 }
 
 @Composable
-private fun DailyLogCard(log: DailyLog) {
-    Card(
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CARD)
+private fun MinimalLogRow(log: DailyLog) {
+    val hasPU = log.pushupCount > 0
+    val hasPL = log.plankSeconds > 0
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(EmberSurface, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // ── Date ──────────────────────────────────────────────────────────────
+        val parts = log.date.split("-")
+        val months = listOf("","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+        val day = if (parts.size == 3) parts[2] else "?"
+        val mon = if (parts.size == 3) months.getOrElse(parts[1].toIntOrNull() ?: 0) { "" } else ""
+
+        Column(modifier = Modifier.width(40.dp)) {
+            Text(day, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Black, lineHeight = 22.sp)
+            Text(mon, color = TextTertiary, fontSize = 10.sp)
+        }
+
+        // ── Red accent bar ────────────────────────────────────────────────────
+        Box(
+            Modifier
+                .width(3.dp)
+                .height(32.dp)
+                .background(
+                    Brush.verticalGradient(listOf(CherryRed, CherryRed.copy(0.3f))),
+                    RoundedCornerShape(2.dp)
+                )
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        // ── Metrics ───────────────────────────────────────────────────────────
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Date column
-            Column(modifier = Modifier.weight(1f)) {
-                val parts = log.date.split("-")
-                if (parts.size == 3) {
-                    val months = listOf("","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
-                    val mon = parts[1].toIntOrNull() ?: 0
-                    Text(parts[2], color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black)
-                    Text("${months.getOrElse(mon) { "" }} ${parts[0]}", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
-                } else {
-                    Text(log.date, color = Color.White, fontSize = 14.sp)
-                }
+            if (hasPU) {
+                Text("${log.pushupCount}", color = CherryRed, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.width(3.dp))
+                Text("reps", color = TextTertiary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
             }
-
-            // Pushups
-            if (log.pushupCount > 0) {
-                MetricChip("💪", "${log.pushupCount}", "reps", Color(0xFF6C63FF))
-                Spacer(Modifier.width(8.dp))
+            if (hasPU && hasPL) {
+                Spacer(Modifier.width(14.dp))
+                Box(Modifier.width(1.dp).height(18.dp).background(TextTertiary.copy(0.2f)))
+                Spacer(Modifier.width(14.dp))
             }
-
-            // Plank
-            if (log.plankSeconds > 0) {
+            if (hasPL) {
                 val m = log.plankSeconds / 60; val s = log.plankSeconds % 60
-                MetricChip("🧘", if (m > 0) "${m}m${s}s" else "${s}s", "plank", Color(0xFF00C853))
+                val plankStr = if (m > 0) "${m}m${s}s" else "${s}s"
+                Text(plankStr, color = WarmAmber, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.width(3.dp))
+                Text("plank", color = TextTertiary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
+            }
+            if (!hasPU && !hasPL) {
+                Text("Rest day", color = TextTertiary, fontSize = 12.sp)
             }
         }
-    }
-}
-
-@Composable
-private fun MetricChip(emoji: String, value: String, label: String, color: Color) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(color.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Text(emoji, fontSize = 16.sp)
-        Text(value, color = color, fontSize = 16.sp, fontWeight = FontWeight.Black)
-        Text(label, color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp)
     }
 }

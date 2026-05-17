@@ -60,6 +60,22 @@ interface WorkoutDao {
     @Query("SELECT COUNT(*) FROM daily_log WHERE pushupCount > 0 OR plankSeconds > 0")
     fun getTotalActiveDays(): Flow<Int>
 
+    // ─── Single-Session Records ───────────────────────────────────────────
+
+    @Query("SELECT COALESCE(MAX(totalReps), 0) FROM workout_sessions WHERE type = 'PUSHUP'")
+    fun getMaxSingleSessionPushups(): Flow<Int>
+
+    @Query("SELECT COALESCE(MAX(durationSeconds), 0) FROM workout_sessions WHERE type = 'PLANK'")
+    fun getMaxSingleSessionPlankSec(): Flow<Int>
+
+    // ─── Best Day (date + value) ──────────────────────────────────────────
+
+    @Query("SELECT date FROM daily_log ORDER BY pushupCount DESC LIMIT 1")
+    fun getBestPushupDay(): Flow<String?>
+
+    @Query("SELECT date FROM daily_log ORDER BY plankSeconds DESC LIMIT 1")
+    fun getBestPlankDay(): Flow<String?>
+
     // ─── Achievements ─────────────────────────────────────────────────────────
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

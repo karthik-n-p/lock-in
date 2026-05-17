@@ -13,12 +13,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,144 +36,112 @@ import `in`.karthiknp.myapplication.ui.screens.achievements.AchievementsScreen
 import `in`.karthiknp.myapplication.ui.screens.history.HistoryScreen
 import `in`.karthiknp.myapplication.ui.screens.home.HomeScreen
 import `in`.karthiknp.myapplication.ui.screens.progress.ProgressScreen
+import `in`.karthiknp.myapplication.ui.screens.settings.SettingsScreen
 import `in`.karthiknp.myapplication.ui.screens.workout.WorkoutScreen
-import `in`.karthiknp.myapplication.ui.theme.FitnessAppTheme
+import `in`.karthiknp.myapplication.ui.theme.*
 import `in`.karthiknp.myapplication.util.ReminderWorker
 import java.util.concurrent.TimeUnit
-
-private val BG = Color(0xFF0A0A0F)
-private val NAV_BG = Color(0xFF0F0F1A)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupWorkManager()
-        setContent {
-            FitnessAppTheme {
-                AppRoot()
-            }
-        }
+        setContent { FitnessAppTheme { AppRoot() } }
     }
 
     private fun setupWorkManager() {
-        val workRequest = PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(calculateInitialDelay(), TimeUnit.MILLISECONDS)
-            .build()
-
+        val morningRequest = PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(calculateDelayToHour(9), TimeUnit.MILLISECONDS)
+            .addTag("morning_motivation").build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "daily_reminder",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
+            "morning_motivation", ExistingPeriodicWorkPolicy.KEEP, morningRequest)
+
+        val eveningRequest = PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(calculateDelayToHour(20), TimeUnit.MILLISECONDS)
+            .addTag("evening_streak_warning").build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "evening_streak_warning", ExistingPeriodicWorkPolicy.KEEP, eveningRequest)
     }
 
-    private fun calculateInitialDelay(): Long {
+    private fun calculateDelayToHour(targetHour: Int): Long {
         val now = java.time.LocalDateTime.now()
-        var targetTime = now.withHour(20).withMinute(0).withSecond(0).withNano(0)
-        if (now.isAfter(targetTime)) {
-            targetTime = targetTime.plusDays(1)
-        }
-        return java.time.temporal.ChronoUnit.MILLIS.between(now, targetTime)
+        var t = now.withHour(targetHour).withMinute(0).withSecond(0).withNano(0)
+        if (now.isAfter(t)) t = t.plusDays(1)
+        return java.time.temporal.ChronoUnit.MILLIS.between(now, t)
     }
 }
 
 @Composable
 private fun AppRoot() {
-    var cameraGranted by remember {
-        mutableStateOf(false)
-    }
-    var notificationGranted by remember {
-        mutableStateOf(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)
+    var cameraGranted by remember { mutableStateOf(false) }
+    var notifGranted by remember { mutableStateOf(Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) }
+
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { p ->
+        cameraGranted = p[Manifest.permission.CAMERA] ?: cameraGranted
+        notifGranted = p[Manifest.permission.POST_NOTIFICATIONS] ?: notifGranted
     }
 
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions -> 
-        cameraGranted = permissions[Manifest.permission.CAMERA] ?: cameraGranted
-        notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: notificationGranted
-    }
-
-    // Check on composition
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) {
-        val permissionsToRequest = mutableListOf<String>()
-
-        cameraGranted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!cameraGranted) permissionsToRequest.add(Manifest.permission.CAMERA)
-
+        val req = mutableListOf<String>()
+        cameraGranted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (!cameraGranted) req.add(Manifest.permission.CAMERA)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationGranted = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!notificationGranted) permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            notificationGranted = true
-        }
-
-        if (permissionsToRequest.isNotEmpty()) {
-            launcher.launch(permissionsToRequest.toTypedArray())
-        }
+            notifGranted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            if (!notifGranted) req.add(Manifest.permission.POST_NOTIFICATIONS)
+        } else notifGranted = true
+        if (req.isNotEmpty()) launcher.launch(req.toTypedArray())
     }
 
     if (!cameraGranted) {
-        PermissionDeniedScreen { 
-            val perms = mutableListOf(Manifest.permission.CAMERA)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationGranted) {
-                perms.add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            launcher.launch(perms.toTypedArray()) 
+        PermissionScreen {
+            val p = mutableListOf(Manifest.permission.CAMERA)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notifGranted)
+                p.add(Manifest.permission.POST_NOTIFICATIONS)
+            launcher.launch(p.toTypedArray())
         }
         return
     }
-
     MainNavGraph()
 }
 
 @Composable
 private fun MainNavGraph() {
-    val navController = rememberNavController()
+    val nav = rememberNavController()
+    var pendingType by remember { mutableStateOf(WorkoutType.PUSHUP) }
 
-    // workout mode passed as nav argument
-    var pendingWorkoutType by remember { mutableStateOf(WorkoutType.PUSHUP) }
-
-    val bottomItems = listOf(
-        BottomItem("home",         "Home",     Icons.Default.Home),
-        BottomItem("progress",     "Progress", Icons.Default.DateRange),
-        BottomItem("achievements", "Badges",   Icons.Default.Star)
+    val items = listOf(
+        NavItem("home", "Home", Icons.Default.Home),
+        NavItem("progress", "Progress", Icons.Default.DateRange),
+        NavItem("achievements", "Badges", Icons.Default.Star),
+        NavItem("settings", "Settings", Icons.Default.Settings)
     )
-
-    val currentRoute by navController.currentBackStackEntryAsState()
-    val showBottomBar = currentRoute?.destination?.route != "workout"
+    val current by nav.currentBackStackEntryAsState()
+    val showBar = current?.destination?.route != "workout"
 
     Scaffold(
-        containerColor = BG,
+        containerColor = EmberBlack,
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
-                    containerColor = NAV_BG,
-                    tonalElevation = 0.dp
-                ) {
-                    bottomItems.forEach { item ->
-                        val selected = currentRoute?.destination?.route == item.route
+            if (showBar) {
+                NavigationBar(containerColor = NavDark, tonalElevation = 0.dp) {
+                    items.forEach { item ->
+                        val sel = current?.destination?.route == item.route
                         NavigationBarItem(
-                            selected = selected,
-                            onClick  = {
-                                navController.navigate(item.route) {
+                            selected = sel,
+                            onClick = {
+                                nav.navigate(item.route) {
                                     popUpTo("home") { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState    = true
+                                    launchSingleTop = true; restoreState = true
                                 }
                             },
-                            icon  = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label, fontSize = 11.sp) },
+                            icon = { Icon(item.icon, item.label) },
+                            label = { Text(item.label, fontSize = 10.sp) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor   = Color(0xFF6C63FF),
-                                selectedTextColor   = Color(0xFF6C63FF),
-                                unselectedIconColor = Color.White.copy(alpha = 0.4f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.4f),
-                                indicatorColor      = Color(0xFF6C63FF).copy(alpha = 0.15f)
+                                selectedIconColor = CherryRed,
+                                selectedTextColor = CherryRed,
+                                unselectedIconColor = TextTertiary,
+                                unselectedTextColor = TextTertiary,
+                                indicatorColor = CherryRed.copy(0.1f)
                             )
                         )
                     }
@@ -181,64 +149,37 @@ private fun MainNavGraph() {
             }
         }
     ) { padding ->
-        NavHost(
-            navController    = navController,
-            startDestination = "home",
-            modifier         = Modifier.padding(padding)
-        ) {
+        NavHost(nav, "home", Modifier.padding(padding)) {
             composable("home") {
                 HomeScreen(
-                    onStartPushups = {
-                        pendingWorkoutType = WorkoutType.PUSHUP
-                        navController.navigate("workout")
-                    },
-                    onStartPlank = {
-                        pendingWorkoutType = WorkoutType.PLANK
-                        navController.navigate("workout")
-                    }
+                    onStartPushups = { pendingType = WorkoutType.PUSHUP; nav.navigate("workout") },
+                    onStartPlank   = { pendingType = WorkoutType.PLANK;  nav.navigate("workout") }
                 )
             }
-            composable("workout") {
-                WorkoutScreen(
-                    onFinish = { navController.popBackStack() }
-                )
-            }
-            composable("history") {
-                HistoryScreen(onBack = { navController.popBackStack() })
-            }
-            composable("progress") {
-                ProgressScreen()
-            }
-            composable("achievements") {
-                AchievementsScreen(onBack = { navController.popBackStack() })
-            }
+            composable("workout") { WorkoutScreen(initialMode = pendingType, onFinish = { nav.popBackStack() }) }
+            composable("history") { HistoryScreen(onBack = { nav.popBackStack() }) }
+            composable("progress") { ProgressScreen() }
+            composable("achievements") { AchievementsScreen(onBack = { nav.popBackStack() }) }
+            composable("settings") { SettingsScreen() }
         }
     }
 }
 
 @Composable
-private fun PermissionDeniedScreen(onRetry: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().background(BG),
-        contentAlignment = Alignment.Center
-    ) {
+private fun PermissionScreen(onRetry: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(EmberBlack), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("📷", fontSize = 64.sp)
-            Spacer(Modifier.height(16.dp))
-            Text("Camera Permission Required",
-                color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text("Pose detection needs camera access",
-                color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp)
-            Spacer(Modifier.height(32.dp))
-            Button(
-                onClick = onRetry,
-                colors  = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
-            ) {
-                Text("Grant Permission")
+            Text("📷", fontSize = 56.sp)
+            Spacer(Modifier.height(14.dp))
+            Text("Camera Permission Required", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text("Pose detection needs camera access", color = TextTertiary, fontSize = 13.sp)
+            Spacer(Modifier.height(28.dp))
+            Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = CherryRed)) {
+                Text("Grant Permission", color = TextPrimary)
             }
         }
     }
 }
 
-private data class BottomItem(val route: String, val label: String, val icon: ImageVector)
+private data class NavItem(val route: String, val label: String, val icon: ImageVector)

@@ -10,13 +10,20 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class HomeStats(
-    val totalPushups: Int    = 0,
-    val totalPlankSec: Int   = 0,
-    val maxPushupsDay: Int   = 0,
-    val longestPlankSec: Int = 0,
-    val avgPushups: Double   = 0.0,
-    val avgPlankSec: Double  = 0.0,
-    val activeDays: Int      = 0
+    val totalPushups: Int      = 0,
+    val totalPlankSec: Int     = 0,
+    val maxPushupsDay: Int     = 0,
+    val longestPlankSec: Int   = 0,
+    val avgPushups: Double     = 0.0,
+    val avgPlankSec: Double    = 0.0,
+    val activeDays: Int        = 0,
+    // New fields
+    val bestSinglePushup: Int  = 0,
+    val bestSinglePlankSec: Int = 0,
+    val todayPushups: Int      = 0,
+    val todayPlankSec: Int     = 0,
+    val bestPushupDay: String? = null,
+    val bestPlankDay: String?  = null
 )
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -25,7 +32,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         FitnessDatabase.getDatabase(app).workoutDao()
     )
 
-    // Split into two typed combine blocks to avoid vararg Array<Any> ClassCastException
+    // Split into typed combine blocks to avoid vararg Array<Any> ClassCastException
     private val intStats: Flow<IntArray> = combine(
         repo.getTotalPushups(),
         repo.getTotalPlankSeconds(),
@@ -41,15 +48,47 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         repo.getAvgPlankSeconds()
     ) { avgPU, avgPL -> doubleArrayOf(avgPU, avgPL) }
 
-    val stats: StateFlow<HomeStats> = combine(intStats, doubleStats) { ints, doubles ->
+    private val singleSessionStats: Flow<IntArray> = combine(
+        repo.getMaxSingleSessionPushups(),
+        repo.getMaxSingleSessionPlankSec()
+    ) { maxPU, maxPL -> intArrayOf(maxPU, maxPL) }
+
+    private val bestDayStats: Flow<Pair<String?, String?>> = combine(
+        repo.getBestPushupDay(),
+        repo.getBestPlankDay()
+    ) { puDay, plDay -> Pair(puDay, plDay) }
+
+    // Today's log
+    private val _todayLog = MutableStateFlow(DailyLog(date = java.time.LocalDate.now().toString()))
+    val todayLog: StateFlow<DailyLog> = _todayLog.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val todayStr = java.time.LocalDate.now().toString()
+            repo.getAllDailyLogs().collect { logs ->
+                val log = logs.firstOrNull { it.date == todayStr }
+                _todayLog.value = log ?: DailyLog(date = todayStr)
+            }
+        }
+    }
+
+    val stats: StateFlow<HomeStats> = combine(
+        intStats, doubleStats, singleSessionStats, bestDayStats, _todayLog
+    ) { ints, doubles, singles, bestDays, today ->
         HomeStats(
-            totalPushups    = ints[0],
-            totalPlankSec   = ints[1],
-            maxPushupsDay   = ints[2],
-            longestPlankSec = ints[3],
-            activeDays      = ints[4],
-            avgPushups      = doubles[0],
-            avgPlankSec     = doubles[1]
+            totalPushups      = ints[0],
+            totalPlankSec     = ints[1],
+            maxPushupsDay     = ints[2],
+            longestPlankSec   = ints[3],
+            activeDays        = ints[4],
+            avgPushups        = doubles[0],
+            avgPlankSec       = doubles[1],
+            bestSinglePushup  = singles[0],
+            bestSinglePlankSec = singles[1],
+            todayPushups      = today.pushupCount,
+            todayPlankSec     = today.plankSeconds,
+            bestPushupDay     = bestDays.first,
+            bestPlankDay      = bestDays.second
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeStats())
 
@@ -81,7 +120,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             val todayLog = logMap[today.format(fmt)]
             val yesterdayLog = logMap[yesterdayStr]
             
-            val todayActive = (todayLog?.pushupCount ?: 0) > 0 || (todayLog?.plankSeconds ?: 0) > 0 || (todayLog?.isStreakFix == true)
             val yesterdayActive = (yesterdayLog?.pushupCount ?: 0) > 0 || (yesterdayLog?.plankSeconds ?: 0) > 0 || (yesterdayLog?.isStreakFix == true)
 
             // If we missed yesterday, but we have older active days, we might want to fix it.

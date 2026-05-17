@@ -1,9 +1,10 @@
 package `in`.karthiknp.myapplication.ui.screens.workout
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -11,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,9 +26,11 @@ import `in`.karthiknp.myapplication.camera.PoseAnalyzer
 import `in`.karthiknp.myapplication.data.local.entity.WorkoutType
 import `in`.karthiknp.myapplication.ui.components.GhostPostureOverlay
 import `in`.karthiknp.myapplication.ui.components.PoseOverlay
+import `in`.karthiknp.myapplication.ui.theme.*
 
 @Composable
 fun WorkoutScreen(
+    initialMode: WorkoutType = WorkoutType.PUSHUP,
     onFinish: () -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
@@ -35,8 +41,9 @@ fun WorkoutScreen(
     val feedback        by viewModel.feedback.collectAsState()
     val formOk          by viewModel.formOk.collectAsState()
     val workoutSaved    by viewModel.workoutSaved.collectAsState()
-
-    // Overlay state
+    val plankFormState  by viewModel.plankFormState.collectAsState()
+    val isNewPB         by viewModel.isNewPB.collectAsState()
+    val pbMessage       by viewModel.pbMessage.collectAsState()
     val currentPose     by viewModel.currentPose.collectAsState()
     val imageWidth      by viewModel.imageWidth.collectAsState()
     val imageHeight     by viewModel.imageHeight.collectAsState()
@@ -46,317 +53,196 @@ fun WorkoutScreen(
     val plankFormIssue  by viewModel.plankFormIssue.collectAsState()
     val pushupIsDown    by viewModel.pushupIsDown.collectAsState()
 
-    // Create the analyzer once
     val analyzer = remember {
         PoseAnalyzer { pose, w, h -> viewModel.processPose(pose, w, h) }
     }
 
     LaunchedEffect(workoutSaved) { if (workoutSaved) onFinish() }
+    LaunchedEffect(initialMode) { viewModel.setMode(initialMode) }
 
-    val feedbackBgColor by animateColorAsState(
+    val feedbackBg by animateColorAsState(
         targetValue = when {
-            feedback.contains("Rep")   -> Color(0xFF00C853)
-            feedback.contains("Hold")  -> Color(0xFF6C63FF)
-            feedback.contains("Great") -> Color(0xFF6C63FF)
-            !formOk                    -> Color(0xFFFF1744)
-            else                       -> Color(0xFF6C63FF)
+            feedback.contains("Rep")   -> CherryRed
+            feedback.contains("Hold")  -> WarmAmber
+            feedback.contains("Great") -> FormGreen
+            !formOk                    -> FormRed
+            else                       -> CherryRed
         },
         animationSpec = tween(250),
-        label = "feedbackColor"
+        label = "fbColor"
     )
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-        // ── Camera Feed ───────────────────────────────────────────────────────
         CameraPreview(
-            modifier       = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             useFrontCamera = true,
-            analyzer       = analyzer
+            analyzer = analyzer
         )
 
-        // ── Ghost Posture Overlay (below real skeleton so ghost is behind) ────
         GhostPostureOverlay(
-            pose          = currentPose,
-            imageWidth    = imageWidth,
-            imageHeight   = imageHeight,
-            isFrontCamera = true,
-            formOk        = formOk,
-            mode          = mode,
-            formIssue     = plankFormIssue,
-            pushupIsDown  = pushupIsDown,
-            modifier      = Modifier.fillMaxSize()
+            pose = currentPose, imageWidth = imageWidth, imageHeight = imageHeight,
+            isFrontCamera = true, formOk = formOk, mode = mode,
+            formIssue = plankFormIssue, pushupIsDown = pushupIsDown,
+            modifier = Modifier.fillMaxSize()
         )
 
-        // ── Real Skeleton Overlay ─────────────────────────────────────────────
         PoseOverlay(
-            pose          = currentPose,
-            imageWidth    = imageWidth,
-            imageHeight   = imageHeight,
-            isFrontCamera = true,
-            elbowAngle    = elbowAngle,
-            bodyAngle     = bodyAngle,
-            shoulderAngle = shoulderAngle,
-            mode          = mode,
-            modifier      = Modifier.fillMaxSize()
+            pose = currentPose, imageWidth = imageWidth, imageHeight = imageHeight,
+            isFrontCamera = true, elbowAngle = elbowAngle, bodyAngle = bodyAngle,
+            shoulderAngle = shoulderAngle, mode = mode,
+            modifier = Modifier.fillMaxSize()
         )
 
-        // ── Top gradient scrim ────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(Color.Black.copy(0.75f), Color.Transparent)
-                    )
-                )
-        )
+        // Top scrim
+        Box(Modifier.fillMaxWidth().height(160.dp)
+            .background(Brush.verticalGradient(listOf(Color.Black.copy(0.75f), Color.Transparent))))
+        // Bottom scrim
+        Box(Modifier.fillMaxWidth().height(200.dp).align(Alignment.BottomCenter)
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.85f)))))
 
-        // ── Bottom gradient scrim ─────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(0.85f))
-                    )
-                )
-        )
-
-        // ── Top Bar ───────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // ── Top Bar ──────────────────────────────────────────────────────────
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { viewModel.finishWorkout() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
             }
             Spacer(Modifier.weight(1f))
-            // Mode tab selector
-            ModeSelector(currentMode = mode) { viewModel.setMode(it) }
+            ModeChips(mode) { viewModel.setMode(it) }
             Spacer(Modifier.weight(1f))
         }
 
-        // ── Central Stats Display ─────────────────────────────────────────────
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (-20).dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val mainValue = if (mode == WorkoutType.PUSHUP) "$reps" else formatTime(plankSec)
+        // ── Central Counter ──────────────────────────────────────────────────
+        Column(Modifier.align(Alignment.Center).offset(y = (-20).dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            val v = if (mode == WorkoutType.PUSHUP) "$reps" else fmtTime(plankSec)
+            Text(v, color = Color.White, fontSize = 84.sp, fontWeight = FontWeight.Black, letterSpacing = (-2).sp)
             Text(
-                text       = mainValue,
-                color      = Color.White,
-                fontSize   = 88.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-2).sp
+                if (mode == WorkoutType.PUSHUP) "PUSHUPS" else "PLANK",
+                color = Color.White.copy(0.55f), fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 5.sp
             )
-            Text(
-                text      = if (mode == WorkoutType.PUSHUP) "PUSHUPS" else "PLANK",
-                color     = Color.White.copy(alpha = 0.65f),
-                fontSize  = 16.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 5.sp
-            )
-
             if (mode == WorkoutType.PLANK) {
                 Spacer(Modifier.height(10.dp))
-                PlankIndicator(isActive = isPlankOn)
+                PlankFormChip(plankFormState)
             }
         }
 
-        // ── Angle Chips ───────────────────────────────────────────────────────
+        // Angle chips
         if (mode == WorkoutType.PUSHUP) {
-            ElbowAngleChip(
-                angle    = elbowAngle,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 12.dp)
-            )
-        } else if (mode == WorkoutType.PLANK) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.End
-            ) {
-                BodyAngleChip(angle = bodyAngle)
-                ShoulderAngleChip(angle = shoulderAngle)
+            AngleChip("${elbowAngle.toInt()}°", "elbow",
+                lerp(1f, 0f, ((elbowAngle - 90) / 70).coerceIn(0.0, 1.0).toFloat()),
+                Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
+        } else {
+            Column(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AngleChip("${bodyAngle.toInt()}°", "body",
+                    lerp(1f, 0f, ((bodyAngle - 145) / 35).coerceIn(0.0, 1.0).toFloat()))
+                AngleChip("${shoulderAngle.toInt()}°", "shoulder",
+                    if (shoulderAngle in 55.0..130.0) 0f else 1f)
             }
         }
 
-        // ── Live Feedback Bar ─────────────────────────────────────────────────
+        // Feedback bar
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(start = 24.dp, end = 24.dp, bottom = 108.dp)
-                .background(feedbackBgColor.copy(alpha = 0.92f), RoundedCornerShape(50))
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().align(Alignment.BottomCenter)
+                .padding(start = 24.dp, end = 24.dp, bottom = 104.dp)
+                .background(feedbackBg.copy(0.9f), RoundedCornerShape(50))
+                .padding(horizontal = 18.dp, vertical = 11.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text       = feedback,
-                color      = Color.White,
-                fontSize   = 15.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign  = TextAlign.Center
-            )
+            Text(feedback, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
 
-        // ── Ghost Legend Badge ────────────────────────────────────────────────
-        // Shown when ghost is visible (form is bad) — explains the dashed overlay
+        // Ghost legend
         if (!formOk) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 16.dp, top = 72.dp)
-                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = "- - - ideal posture",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            Box(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 68.dp)
+                .background(Color.White.copy(0.12f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) { Text("- - - ideal posture", color = Color.White.copy(0.6f), fontSize = 10.sp) }
         }
 
-        // ── Finish Button ─────────────────────────────────────────────────────
+        // PB Celebration
+        AnimatedVisibility(
+            visible = isNewPB,
+            enter = scaleIn(initialScale = 0.3f, animationSpec = spring(Spring.DampingRatioMediumBouncy)) + fadeIn(),
+            exit = scaleOut() + fadeOut(),
+            modifier = Modifier.align(Alignment.Center)
+        ) { PBOverlay(pbMessage) { viewModel.dismissPB() } }
+
+        // Finish button
         Button(
             onClick = { viewModel.finishWorkout() },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 28.dp, vertical = 32.dp)
-                .fillMaxWidth()
-                .height(56.dp),
-            shape  = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF1744))
-        ) {
-            Text("FINISH", fontSize = 17.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .padding(horizontal = 28.dp, vertical = 28.dp)
+                .fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = CherryRed)
+        ) { Text("FINISH", fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp) }
+    }
+}
+
+// ─── Components ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun PBOverlay(message: String, onDismiss: () -> Unit) {
+    val p = rememberInfiniteTransition(label = "pb")
+    val s by p.animateFloat(1f, 1.08f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "ps")
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(3000); onDismiss() }
+    Box(Modifier.scale(s)
+        .background(Brush.radialGradient(listOf(GoldReward.copy(0.3f), Color.Transparent)), CircleShape)
+        .padding(40.dp), contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("⚡", fontSize = 44.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("NEW PERSONAL BEST!", color = GoldReward, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Spacer(Modifier.height(4.dp))
+            Text(message, color = Color.White.copy(0.8f), fontSize = 13.sp, textAlign = TextAlign.Center)
         }
     }
 }
 
 @Composable
-private fun ModeSelector(currentMode: WorkoutType, onSelect: (WorkoutType) -> Unit) {
-    Row(
-        modifier = Modifier
-            .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
-            .padding(4.dp)
-    ) {
-        listOf(WorkoutType.PUSHUP to "💪 PUSHUPS", WorkoutType.PLANK to "🧘 PLANK").forEach { (type, label) ->
-            val selected = currentMode == type
-            Surface(
-                onClick  = { onSelect(type) },
-                color    = if (selected) Color.White else Color.Transparent,
-                shape    = RoundedCornerShape(50),
-                modifier = Modifier.padding(2.dp)
+private fun ModeChips(current: WorkoutType, onSelect: (WorkoutType) -> Unit) {
+    Row(Modifier.background(Color.White.copy(0.1f), RoundedCornerShape(50)).padding(3.dp)) {
+        listOf(WorkoutType.PUSHUP to "🏋️ PUSH", WorkoutType.PLANK to "⏱️ PLANK").forEach { (t, l) ->
+            val sel = current == t
+            Surface(onClick = { onSelect(t) }, color = if (sel) Color.White else Color.Transparent,
+                shape = RoundedCornerShape(50), modifier = Modifier.padding(1.dp)
             ) {
-                Text(
-                    text       = label,
-                    color      = if (selected) Color.Black else Color.White,
-                    fontSize   = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier   = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                )
+                Text(l, color = if (sel) Color.Black else Color.White,
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             }
         }
     }
 }
 
 @Composable
-private fun PlankIndicator(isActive: Boolean) {
-    val color = if (isActive) Color(0xFF00E676) else Color(0xFFFFAB40)
-    val label = if (isActive) "● HOLDING" else "○ NOT DETECTED"
-    Box(
-        modifier = Modifier
-            .background(color.copy(alpha = 0.2f), RoundedCornerShape(50))
-            .padding(horizontal = 14.dp, vertical = 6.dp)
-    ) {
-        Text(label, color = color, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+private fun PlankFormChip(state: PlankFormState) {
+    val col by animateColorAsState(when (state) {
+        PlankFormState.GOOD -> FormGreen; PlankFormState.WARNING -> FormYellow; PlankFormState.PAUSED -> FormRed
+    }, tween(300), label = "fc")
+    val pulse = rememberInfiniteTransition(label = "fp")
+    val pa by pulse.animateFloat(0.6f, 1f, infiniteRepeatable(tween(400), RepeatMode.Reverse), label = "fpa")
+    val a = if (state == PlankFormState.WARNING) pa else 1f
+    val txt = when (state) {
+        PlankFormState.GOOD -> "● HOLDING"; PlankFormState.WARNING -> "⚠ FIX FORM"; PlankFormState.PAUSED -> "◼ PAUSED"
+    }
+    Box(Modifier.alpha(a).background(col.copy(0.18f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp)) {
+        Text(txt, color = col, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun ElbowAngleChip(angle: Double, modifier: Modifier = Modifier) {
-    val t       = ((angle - 90.0) / 70.0).coerceIn(0.0, 1.0).toFloat()
-    val color   = Color(red = 1f - t, green = t, blue = 0.2f)
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(0.55f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun AngleChip(value: String, label: String, redFraction: Float = 0f, modifier: Modifier = Modifier) {
+    val c = Color(red = redFraction.coerceIn(0f,1f), green = (1f - redFraction).coerceIn(0f,1f), blue = 0.15f, alpha = 1f)
+    Column(modifier.background(Color.Black.copy(0.5f), RoundedCornerShape(10.dp))
+        .padding(horizontal = 8.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text       = "${angle.toInt()}°",
-            color      = color,
-            fontSize   = 20.sp,
-            fontWeight = FontWeight.Black
-        )
-        Text(
-            text    = "elbow",
-            color   = Color.White.copy(0.5f),
-            fontSize = 10.sp
-        )
+        Text(value, color = c, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text(label, color = Color.White.copy(0.4f), fontSize = 9.sp)
     }
 }
 
-@Composable
-private fun BodyAngleChip(angle: Double, modifier: Modifier = Modifier) {
-    val t       = ((angle - 145.0) / 35.0).coerceIn(0.0, 1.0).toFloat()
-    val color   = Color(red = 1f - t, green = t, blue = 0.2f)
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(0.55f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text       = "${angle.toInt()}°",
-            color      = color,
-            fontSize   = 20.sp,
-            fontWeight = FontWeight.Black
-        )
-        Text(
-            text    = "body",
-            color   = Color.White.copy(0.5f),
-            fontSize = 10.sp
-        )
-    }
-}
-
-@Composable
-private fun ShoulderAngleChip(angle: Double, modifier: Modifier = Modifier) {
-    // 55–130° is the valid elbow-under-shoulder range; color accordingly
-    val inRange = angle in 55.0..130.0
-    val color   = if (inRange) Color(0xFF00E676) else Color(0xFFFFAB40)
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(0.55f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text       = "${angle.toInt()}°",
-            color      = color,
-            fontSize   = 20.sp,
-            fontWeight = FontWeight.Black
-        )
-        Text(
-            text    = "shoulder",
-            color   = Color.White.copy(0.5f),
-            fontSize = 10.sp
-        )
-    }
-}
-
-private fun formatTime(seconds: Int): String {
-    val m = seconds / 60; val s = seconds % 60
-    return "%d:%02d".format(m, s)
-}
+private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
+private fun fmtTime(s: Int): String { val m = s / 60; val r = s % 60; return "%d:%02d".format(m, r) }

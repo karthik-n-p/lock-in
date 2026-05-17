@@ -1,120 +1,197 @@
-# Lock-In Android App
+# 🔥 Lock-In — AI-Powered Offline Fitness Tracker
 
-Lock-In is a Kotlin-based Android fitness application focused on helping users track pushups and plank workouts using real-time camera pose detection. The app blends Jetpack Compose UI, CameraX live preview, ML Kit pose analysis, and on-device progress tracking to create an interactive strength training experience.
+> **Real-time pushup counting & plank tracking using on-device pose detection. Zero data leaves your phone.**
 
-## What This App Does
+[![Android](https://img.shields.io/badge/Platform-Android-red?style=flat-square&logo=android)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1-E63946?style=flat-square&logo=kotlin)](https://kotlinlang.org)
+[![ML Kit](https://img.shields.io/badge/ML%20Kit-Pose%20Detection-FF8C42?style=flat-square)](https://developers.google.com/ml-kit)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-- Tracks **pushup repetitions** using camera-based pose detection and an elbow-angle state machine.
-- Tracks **plank hold duration** with live posture validation and a timer that only runs while good form is detected.
-- Provides **real-time feedback** for pushup and plank form, including posture corrections and angle metrics.
-- Saves workout sessions locally using **Room database persistence**.
-- Includes progress, workout history, and achievement screens for pushup and plank goals.
+---
 
-## Core Features
+## 🏋️ What Is Lock-In?
 
-- **Pushup Rep Counting**
-  - Counts reps when the user starts from full extension, lowers into a valid down position, and returns to extension.
-  - Validates full body position, hip alignment, and elbow angle before counting a rep.
-  - Displays live elbow angle feedback and "ghost" posture overlay for better form.
+**Lock-In** is a premium, 100% offline Android fitness app that uses your phone's camera and Google ML Kit Pose Detection to **automatically count pushup reps** and **time plank holds** with real-time form feedback. No gym equipment, no subscriptions, no cloud — just you and your phone.
 
-- **Plank Hold Tracking**
-  - Detects plank posture from the front camera in portrait mode.
-  - Validates shoulder and hip alignment, body angle, and holding stability.
-  - Starts the plank timer only when good form is maintained.
-  - Shows live body angle, shoulder angle, and form issues such as hips too high or low.
+Built with **Jetpack Compose**, **CameraX**, and a psychology-driven UI designed to build lasting fitness habits through streak tracking, achievements, and motivational feedback loops.
 
-- **Real-Time Pose Guidance**
-  - Uses Google ML Kit Pose Detection to extract landmarks in real time.
-  - Displays a skeleton overlay plus ideal posture ghost hints.
-  - Provides instant feedback messages like "Keep hips level!" and "Fire rep X!"
+---
 
-- **Local Persistence & Progress**
-  - Stores workout sessions with rep count and plank duration.
-  - Tracks cumulative pushup totals and plank hold seconds.
-  - Includes achievements for milestone goals like 50/100/200 pushups and 30/60/120 second planks.
+## ✨ Features
 
-- **Modern Android Architecture**
-  - Built with **Jetpack Compose** for UI.
-  - Uses **CameraX** for camera feed and image analysis.
-  - Integrates **Room** and **KSP** for local storage.
-  - Supports **WorkManager** for periodic reminders and background tasks.
+### 🎯 AI Pose Detection
+- **Pushup rep counting** — automatic detection using elbow angle state machine
+- **Plank hold timer** — starts only when correct form is detected
+- **2-second grace period** — timer pauses after 2s of form break, not instantly
+- **Real-time form indicators** — Green (good) / Yellow (fix form) / Red (paused)
+- **Ghost posture overlay** — see ideal body position overlaid on camera feed
+- **Live angle metrics** — elbow, body, and shoulder angles displayed in real-time
 
-## App Flow
+### 🔥 Streak & Gamification
+- **Unlimited day streaks** — no cap, streak grows as long as you show up
+- **3 monthly Streak Fixes** — bridge a missed day without losing progress
+- **Customizable day-end time** — night owls can set reset time up to 6 AM
+- **Achievement badges** — unlock milestones for pushup and plank goals
+- **Personal best celebrations** — animated overlay with motivational quotes
+- **Daily goal progress bars** — visual pushup and plank targets
 
-1. **Home Screen**
-   - Start a pushup session.
-   - Start a plank session.
-   - Review progress and achievements.
+### 🎨 Premium Bento UI
+- **Dark OLED-optimized** design with warm red-orange "Ember" palette
+- **Bento grid layout** — modular, clean card-based interface
+- **Real calendar streak map** — proper month view with day alignment
+- **Spring animations** — bouncy, satisfying micro-interactions
+- **Minimal history log** — clean rows with red accent bars
 
-2. **Workout Screen**
-   - Live camera preview with skeleton and posture overlays.
-   - Mode selector for `PUSHUPS` or `PLANK`.
-   - Central stats display for reps or plank time.
-   - Instant feedback badge and finish button.
+### 🔔 Smart Notifications
+- **9 AM morning motivation** — curated quotes to start your day
+- **8 PM streak warning** — reminder only if you haven't worked out
+- **Achievement alerts** — celebrate badge unlocks
+- Never spammy — notifications only fire when relevant
 
-3. **Progress & Achievements**
-   - View workout history and cumulative performance.
-   - Unlock badges for pushup and plank milestones.
+### 🔒 Privacy First
+- **100% offline** — no internet required, ever
+- **Zero data collection** — nothing leaves your device
+- **No accounts** — no sign-up, no login, no tracking
+- **Local Room database** — all data stored on-device only
 
-## Technical Overview
+---
 
-- Android Gradle Plugin: `8.13.2`
-- Kotlin version: `1.9.23`
-- Compose compiler extension: `1.5.11`
-- Min SDK: `26`
-- Target SDK: `34`
-- Package namespace: `in.karthiknp.myapplication`
+## 📱 Screenshots
 
-### Key Modules
+| Home | Workout | Progress | Achievements |
+|------|---------|----------|--------------|
+| Bento grid with streak, goals, calendar | Live camera with pose overlay | Avatar evolution, charts, records | Badge grid with glow effects |
 
-- `app/src/main/java/in/karthiknp/myapplication/pose`
-  - `PushupDetector.kt` — pushup rep counting and form analysis.
-  - `PlankDetector.kt` — plank posture detection and hold timer.
+---
 
-- `app/src/main/java/in/karthiknp/myapplication/ui/screens/workout`
-  - `WorkoutViewModel.kt` — workout state management and feedback.
-  - `WorkoutScreen.kt` — Compose UI for workout tracking.
+## 🛠️ Tech Stack
 
-- `app/src/main/java/in/karthiknp/myapplication/camera`
-  - `CameraPreview.kt` — live camera feed integration.
-  - `PoseAnalyzer.kt` — ML Kit image analysis pipeline.
+| Layer | Technology |
+|-------|-----------|
+| **UI** | Jetpack Compose, Material 3 |
+| **Camera** | CameraX (ImageAnalysis) |
+| **AI/ML** | Google ML Kit Pose Detection |
+| **Database** | Room + KSP |
+| **Background** | WorkManager |
+| **Architecture** | MVVM, StateFlow |
+| **Language** | Kotlin 2.1 |
+| **Min SDK** | 26 (Android 8.0) |
+| **Target SDK** | 34 (Android 14) |
 
-- `app/src/main/java/in/karthiknp/myapplication/data/local`
-  - Room database schema and entity models.
-  - Workout history and achievement persistence.
+---
 
-## Installation
+## 📂 Project Structure
 
-1. Clone the repository:
+```
+app/src/main/java/in/karthiknp/myapplication/
+├── camera/              # CameraX preview & ML Kit analyzer
+├── data/local/          # Room database, DAO, entities, preferences
+├── pose/                # PushupDetector, PlankDetector algorithms
+├── ui/
+│   ├── components/      # PoseOverlay, GhostPostureOverlay
+│   ├── screens/
+│   │   ├── home/        # Bento grid home screen
+│   │   ├── workout/     # Live workout with form tracking
+│   │   ├── progress/    # Charts, avatar, consistency ring
+│   │   ├── achievements/# Badge grid with animations
+│   │   ├── history/     # Minimal workout log
+│   │   └── settings/    # Day-end time, notifications
+│   └── theme/           # Ember red-orange color system
+├── util/                # ReminderWorker notifications
+├── LockInWidgetProvider.kt  # Home screen widget
+└── MainActivity.kt      # Navigation & permissions
+```
 
-   ```bash
-   git clone https://your-repo-url.git
-   cd lock-in
-   ```
+---
 
-2. Open the project in Android Studio.
-3. Sync Gradle and build the project.
-4. Run the `app` module on a device with a camera.
+## 🚀 Getting Started
 
-## Permissions
+### Prerequisites
+- Android Studio Hedgehog (2024.1) or later
+- JDK 17+
+- Android device with camera (emulator works but limited)
 
-This app requires runtime permission for:
+### Build & Run
 
-- `android.permission.CAMERA`
-- `android.permission.POST_NOTIFICATIONS` (Android 13+)
+```bash
+git clone https://github.com/karthik-n-p/lock-in.git
+cd lock-in
+./gradlew assembleDebug
+```
 
-The manifest also marks camera hardware as optional so the app can gracefully handle devices without a rear camera.
+Then install `app/build/outputs/apk/debug/app-debug.apk` on your device.
 
-## Usage Tips
+### Permissions Required
+- `CAMERA` — for real-time pose detection
+- `POST_NOTIFICATIONS` (Android 13+) — for smart workout reminders
 
-- For **pushups**, place the phone to the side so the full body is visible from head to ankles.
-- For **planks**, position the front camera at chest height so shoulders and hips are clearly visible.
-- Keep the frame stable and ensure good lighting for accurate pose detection.
+---
 
-## Keywords
+## 💡 Usage Tips
 
-pushup tracker app, plank workout tracker, Android pose detection app, camera-based fitness app, ML Kit plank timer, ML Kit pushup counter, Jetpack Compose fitness app, CameraX workout tracker, Android workout progress, pushup and plank form feedback.
+| Exercise | Camera Position | Notes |
+|----------|----------------|-------|
+| **Pushups** | Side view, full body visible | Place phone 4-6 feet away at floor level |
+| **Plank** | Front camera, chest height | Hold phone at arm's length or prop on surface |
 
-## License
+- Ensure **good lighting** for accurate landmark detection
+- Wear **fitted clothing** — baggy clothes can obscure joint landmarks
+- The ghost overlay shows **ideal posture** — align your body to match
 
-No license file is included in this repository. Add a license if you plan to publish or share this project publicly.
+---
+
+## 🎨 Design Philosophy
+
+Lock-In uses a **psychology-driven "Ember" color palette**:
+
+| Color | Hex | Purpose |
+|-------|-----|---------|
+| Cherry Red | `#E63946` | Urgency, passion — drives daily return |
+| Warm Amber | `#FF8C42` | Energy, warmth — rewards & streaks |
+| Soft Coral | `#FF6B6B` | Soft accent for secondary elements |
+| Gold Reward | `#FFB74D` | Achievement dopamine — celebrations |
+| Ember Black | `#0C0808` | Warm OLED-friendly dark background |
+
+The **bento grid layout** creates a premium, organized feel while maximizing information density without visual clutter.
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Rest day tracking with recovery tips
+- [ ] Social sharing for milestones
+- [ ] Custom workout goals per day
+- [ ] More exercise types (squats, sit-ups)
+- [ ] Wear OS companion app
+- [ ] Weekly / monthly progress reports
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🔑 Keywords
+
+`pushup counter app` `plank timer app` `AI fitness tracker` `offline workout app` `Android pose detection` `ML Kit fitness` `camera workout tracker` `rep counter app` `form feedback fitness` `streak tracker` `habit building app` `Jetpack Compose fitness` `CameraX workout` `real-time pose estimation` `privacy-first fitness app` `OLED dark fitness app` `bento UI design` `gamified workout tracker`
+
+---
+
+<p align="center">
+  <b>Built with 🔥 by <a href="https://github.com/karthik-n-p">Karthik N P</a></b><br>
+  <sub>Lock In. Show Up. Get Stronger.</sub>
+</p>

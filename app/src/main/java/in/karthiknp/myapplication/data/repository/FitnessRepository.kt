@@ -33,6 +33,10 @@ class FitnessRepository(private val dao: WorkoutDao) {
     fun getAvgPushups(): Flow<Double>       = dao.getAvgPushups()
     fun getAvgPlankSeconds(): Flow<Double>  = dao.getAvgPlankSeconds()
     fun getTotalActiveDays(): Flow<Int>     = dao.getTotalActiveDays()
+    fun getMaxSingleSessionPushups(): Flow<Int> = dao.getMaxSingleSessionPushups()
+    fun getMaxSingleSessionPlankSec(): Flow<Int> = dao.getMaxSingleSessionPlankSec()
+    fun getBestPushupDay(): Flow<String?>   = dao.getBestPushupDay()
+    fun getBestPlankDay(): Flow<String?>    = dao.getBestPlankDay()
 
     // ─── Streak Logic ─────────────────────────────────────────────────────────
 
@@ -138,8 +142,9 @@ class FitnessRepository(private val dao: WorkoutDao) {
 
         if (type == WorkoutType.PUSHUP) {
             val total = dao.getTotalPushups().first()
-            listOf("pushup_50" to 50, "pushup_100" to 100, "pushup_200" to 200,
-                   "pushup_500" to 500, "pushup_1000" to 1000).forEach { (id, threshold) ->
+            listOf("pushup_10" to 10, "pushup_50" to 50, "pushup_100" to 100,
+                   "pushup_250" to 250, "pushup_500" to 500, "pushup_1000" to 1000,
+                   "pushup_2500" to 2500).forEach { (id, threshold) ->
                 val a = dao.getAchievement(id)
                 if (a != null && a.unlockedAt == null && total >= threshold) {
                     dao.upsertAchievement(a.copy(unlockedAt = now))
@@ -147,7 +152,8 @@ class FitnessRepository(private val dao: WorkoutDao) {
             }
         } else {
             val longest = dao.getLongestPlankSeconds().first()
-            listOf("plank_30" to 30, "plank_60" to 60, "plank_120" to 120,
+            listOf("plank_15" to 15, "plank_30" to 30, "plank_60" to 60,
+                   "plank_120" to 120, "plank_180" to 180,
                    "plank_300" to 300).forEach { (id, threshold) ->
                 val a = dao.getAchievement(id)
                 if (a != null && a.unlockedAt == null && longest >= threshold) {

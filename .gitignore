@@ -1,15 +1,61 @@
+# ─── Android / Gradle ────────────────────────────────────────────
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.gradle/
+/build/
+app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
 local.properties
+
+# ─── IDE ─────────────────────────────────────────────────────────
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/libraries/
+.idea/modules.xml
+.idea/caches/
+.idea/dictionaries/
+.idea/shelf/
+.idea/.name
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/deploymentTargetSelector.xml
+.idea/kotlinc.xml
+*.swp
+*.swo
+*~
+
+# ─── OS Files ────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Kotlin / Java ──────────────────────────────────────────────
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+hs_err_pid*
+
+# ─── Signing / Secrets ──────────────────────────────────────────
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+
+# ─── Build Reports ───────────────────────────────────────────────
+/build/reports/
+app/build/reports/
+
+# ─── Miscellaneous ───────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig
